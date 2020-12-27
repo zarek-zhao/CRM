@@ -7,8 +7,8 @@
   <properties resource="jdbc.properties"/>
   
   <typeAliases>
-  
-  	<package name="com.xxx.domain"/>
+<!--  起别名-->
+  	<package name="com.zarek.crm.settings.domain"/>
   	
   
   </typeAliases>
@@ -27,8 +27,8 @@
   
  
   <mappers>
-   
-      <package name="com.xxx.dao"/>
+<!--   注册mapper-->
+      <package name="com.zarek.crm.settings.dao"/>
     
   </mappers>
 </configuration>
