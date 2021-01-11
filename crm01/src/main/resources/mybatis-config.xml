@@ -9,7 +9,7 @@
   <typeAliases>
 <!--  起别名-->
   	<package name="com.zarek.crm.settings.domain"/>
-  	
+  	<package name="com.zarek.crm.workbench.domain"/>
   
   </typeAliases>
   
@@ -29,7 +29,7 @@
   <mappers>
 <!--   注册mapper-->
       <package name="com.zarek.crm.settings.dao"/>
-    
+      <package name="com.zarek.crm.workbench.dao"/>
   </mappers>
 </configuration>
 

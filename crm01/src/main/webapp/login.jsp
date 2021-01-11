@@ -12,6 +12,11 @@
     <script type="text/javascript" src="jquery/bootstrap_3.3.0/js/bootstrap.min.js"></script>
     <script type="text/javascript">
         $(function (){
+            //如果当前的窗口不是顶层窗口，那么将当前窗口设置为顶层窗口
+            if(window.top!=window){
+                window.top.location = window.location
+            }
+
             //页面加载完毕后，清空输入文本框
             $("#loginAct").val("")
             $("#loginPwd").val("")
