@@ -26,6 +26,10 @@
     <script type="text/javascript">
 
         $(function () {
+            //页面加载完毕后触发一个方法
+            //默认展开列表的第一页，每页展现两条记录
+            pageList(1,2)
+
             //为创建按钮绑定事件，打开添加操作的模态窗口
             $("#addBtn").click(function (){
 
@@ -73,14 +77,12 @@
                         //所有者下拉框处理完毕后，展现模态窗口
                         $("#createActivityModal").modal("show")
 
-
                     }
                 })
 
 
 
             })
-
 
             //为保存按钮绑定事件，执行添加操作
             $("#saveBtn").click(function (){
@@ -105,6 +107,21 @@
                         if(data.success){
                             //添加成功后
                             //刷新市场活动信息列表（局部刷新）
+                            // pageList(1,2)
+                            /*
+                            *操作后停留在当前页
+                            * $("#activityPage").bs_pagination('getOption','currentPage')
+                            * 操作后维持已经设置好的每页展示的记录数
+                            * $("#activityPage").bs_pagination('getOption','rowsPerPage')
+                            *
+                            * 这两个参数不需要进行任何的修改操作
+                            * 直接使用，是由分页插件带给我们的
+                            * */
+
+                            //做完添加操作后，应该回到第一页，维持每页展现的记录数
+                            pageList(1
+                                ,$("#activityPage").bs_pagination('getOption','rowsPerPage'))
+
 
                             //清空添加模态窗口中的数据
                             //重置表单
@@ -122,6 +139,7 @@
                                     dom对象转换为jquery对象：
                                         $(dom)
                              */
+
                             $("#activityAddForm")[0].reset()
 
                             //关闭添加操作的模态窗口
@@ -134,10 +152,6 @@
                     }
                 })
             })
-
-            //页面加载完毕后触发一个方法
-            //默认展开列表的第一页，每页展现两条记录
-            pageList(1,2)
 
             //为查询按钮绑定事件，触发pageList方法
             $("#searchBtn").click(function (){
@@ -152,7 +166,6 @@
 
                 pageList(1,2)
             })
-
 
             //为全选复选框绑定事件
             $("#qx").click(function (){
@@ -184,13 +197,147 @@
                     alert("请选择需要删除的记录")
                 //肯定选了，而且可能是一条记录也可能是多条记录，批量删除
                 }else{
-                    alert("执行删除操作")
-                //    url:workbench/activity/delete.do
-                    
+                    //删除之前给用户一个友好的提示
+                    if(confirm("确定删除所选中的记录吗？")){
+                        //    url:workbench/activity/delete.do
+
+                        //拼接参数
+                        var param = ""
+                        //将$xz中的每一个dom对象遍历出来，取其value值，就相当于取得了需要删除的记录的id
+                        for(var i=0;i<$xz.length;i++){
+                            param += "id="+$($xz[i]).val()
+                            //如果不是最后一个元素，需要在后面追加一个&符
+                            if(i<$xz.length-1){
+                                param += "&"
+                            }
+                        }
+
+                        $.ajax({
+                            url:"workbench/activity/delete.do",
+                            data:param,
+                            type:"post",
+                            dataType:"json",
+                            success:function (data) {
+                                /*
+                                    data:
+                                        {"success":true/false}
+
+                                 */
+                                if(data.success){
+                                    //删除成功后
+                                    pageList(1
+                                        ,$("#activityPage").bs_pagination('getOption','rowsPerPage'))
+                                }else{
+                                    alert("删除市场活动失败")
+                                }
+                            }
+                        })
+                    }
+
                 }
             })
 
+            //为修改按钮绑定事件，打开修改操作的模态窗口
+            $("#editBtn").click(function (){
+                var $xz = $("input[name=xz]:checked")
+
+                if($xz.length==0){
+                    alert("请选择需要修改的记录")
+                }else if($xz.length>1){
+                    alert("只能选择一条记录进行修改")
+
+                }else{
+                    //肯定只选了一条
+                    var id = $xz.val()
+
+                    $.ajax({
+                        url:"workbench/activity/getUserListAndActivity.do",
+                        data:{
+                            "id":id
+                        },
+                        type:"get",
+                        dataType:"json",
+                        success:function (data) {
+                            /*
+                                data:
+                                    用户列表
+                                    市场活动对象
+                                    {"uList":[{用户1},{2},{3}],"a":{市场活动} }
+                             */
+                            //处理所有者的下拉框
+                            var html = "<option></option>"
+                            $.each(data.uList,function (i,n){
+                                html += "<option value='"+n.id+"'>"+n.name+"</option>"
+                            })
+
+                            $("#edit-owner").html(html)
+
+                            //处理单挑activity
+                            $("#edit-id").val(data.a.id)
+                            $("#edit-name").val(data.a.name)
+                            $("#edit-owner").val(data.a.owner)
+                            $("#edit-startDate").val(data.a.startDate)
+                            $("#edit-endDate").val(data.a.endDate)
+                            $("#edit-cost").val(data.a.cost)
+                            $("#edit-description").val(data.a.description)
+
+                            //所有值都填写之后，打开修改操作的模态窗口
+                            $("#editActivityModal").modal("show")
+
+
+                        }
+                    })
+                }
+            })
+
+            //为更新按钮绑定事件，执行市场活动的更新操作
+            $("#updateBtn").click(function (){
+                /*
+                    在实际项目开发中，一定是按照先做添加，在做修改的这种顺序
+                    所以，为了节省开发时间，修改操作一般都是capy添加操作
+                 */
+                $.ajax({
+                    url:"workbench/activity/update.do",
+                    data:{
+                        "id":$.trim($("#edit-id").val()),
+                        "owner":$.trim($("#edit-owner").val()),
+                        "name":$.trim($("#edit-name").val()),
+                        "startDate":$.trim($("#edit-startDate").val()),
+                        "endDate":$.trim($("#edit-endDate").val()),
+                        "cost":$.trim($("#edit-cost").val()),
+                        "description":$.trim($("#edit-description").val()),
+
+                    },
+                    type:"post",
+                    dataType:"json",
+                    success:function (data) {
+                        /*
+                            data:
+                                {"success":true/false}
+                         */
+                        if(data.success){
+                            //修改成功后
+                            //刷新市场活动信息列表（局部刷新）
+                            pageList($("#activityPage").bs_pagination('getOption','currentPage')
+                                    ,$("#activityPage").bs_pagination('getOption','rowsPerPage'))
+                            //关闭添加操作的模态窗口
+                            $("#editActivityModal").modal("hide")
+
+
+                        }else{
+                            alert("修改市场活动失败")
+                        }
+                    }
+                })
+
+                //获取模态窗口中的数据并传给后端、
+                //获取后端传回的数据如果正确则成功更新
+                //关闭模态窗口
+            })
         });
+
+
+
 
         /*
             对于所有的关系行数据库，做前端的分页相关操作的基础组件
@@ -210,6 +357,9 @@
 
          */
         function pageList(pageNo,pageSize){
+            //将全选的复选框的勾干掉
+            $("#qx").prop("checked",false)
+
             //查询前，将隐藏域中保存的信息取出来，重新赋予到搜索框中
             $("#search-name").val($.trim($("#hidden-name").val()))
             $("#search-owner").val($.trim($("#hidden-owner").val()))
@@ -380,31 +530,31 @@
 
                 <form class="form-horizontal" role="form">
 
+                    <input type="hidden" id="edit-id" />
+
                     <div class="form-group">
                         <label for="edit-marketActivityOwner" class="col-sm-2 control-label">所有者<span
                                 style="font-size: 15px; color: red;">*</span></label>
                         <div class="col-sm-10" style="width: 300px;">
-                            <select class="form-control" id="edit-marketActivityOwner">
-                                <option>zhangsan</option>
-                                <option>lisi</option>
-                                <option>wangwu</option>
+                            <select class="form-control" id="edit-owner">
+
                             </select>
                         </div>
                         <label for="edit-marketActivityName" class="col-sm-2 control-label">名称<span
                                 style="font-size: 15px; color: red;">*</span></label>
                         <div class="col-sm-10" style="width: 300px;">
-                            <input type="text" class="form-control" id="edit-marketActivityName" value="发传单">
+                            <input type="text" class="form-control" id="edit-name" value="发传单">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="edit-startTime" class="col-sm-2 control-label">开始日期</label>
                         <div class="col-sm-10" style="width: 300px;">
-                            <input type="text" class="form-control" id="edit-startTime" value="2020-10-10">
+                            <input type="text" class="form-control time" id="edit-startDate" value="2020-10-10">
                         </div>
                         <label for="edit-endTime" class="col-sm-2 control-label">结束日期</label>
                         <div class="col-sm-10" style="width: 300px;">
-                            <input type="text" class="form-control" id="edit-endTime" value="2020-10-20">
+                            <input type="text" class="form-control time" id="edit-endDate" value="2020-10-20">
                         </div>
                     </div>
 
@@ -418,7 +568,14 @@
                     <div class="form-group">
                         <label for="edit-describe" class="col-sm-2 control-label">描述</label>
                         <div class="col-sm-10" style="width: 81%;">
-                            <textarea class="form-control" rows="3" id="edit-describe">市场活动Marketing，是指品牌主办或参与的展览会议与公关市场活动，包括自行主办的各类研讨会、客户交流会、演示会、新产品发布会、体验会、答谢会、年会和出席参加并布展或演讲的展览会、研讨会、行业交流会、颁奖典礼等</textarea>
+<%--
+        关于文本域textarea:
+            1.一定是要以标签对的形式来表现，正常状态下标签对要紧紧的挨着
+            2.textarea虽然是以标签对的形式来呈现的，但是它也是属于表单元素范畴
+                所有的对于textarea的取值和赋值操作，应该统一使用val()方法 (而不是html()方法)
+
+--%>
+                            <textarea class="form-control" rows="3" id="edit-description"></textarea>
                         </div>
                     </div>
 
@@ -427,7 +584,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal">更新</button>
+                <button type="button" class="btn btn-primary" id="updateBtn">更新</button>
             </div>
         </div>
     </div>
@@ -502,7 +659,7 @@
                 <button type="button" class="btn btn-primary" id="addBtn">
                     <span class="glyphicon glyphicon-plus"></span> 创建
                 </button>
-                <button type="button" class="btn btn-default" data-toggle="modal" data-target="#editActivityModal"><span
+                <button type="button" class="btn btn-default" id="editBtn"><span
                         class="glyphicon glyphicon-pencil"></span> 修改
                 </button>
                 <button type="button" class="btn btn-danger" id="deleteBtn"><span class="glyphicon glyphicon-minus"></span> 删除</button>
